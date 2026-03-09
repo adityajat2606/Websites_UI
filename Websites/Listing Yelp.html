@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Locale – Discover Local Businesses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161d;
+    --surface2: #1e1e28;
+    --border: rgba(255,255,255,0.07);
+    --accent: #f5a623;
+    --accent2: #e06c75;
+    --text: #f0eff4;
+    --muted: #6b6b82;
+    --card-hover: #22222e;
+    --green: #3dcb7f;
+    --shadow: 0 4px 24px rgba(0,0,0,0.45);
+    --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1,h2,h3,h4 { font-family: 'Playfair Display', serif; }
+
+  /* ── UTILS ─────────────────────────────── */
+  .hidden { display: none !important; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 10px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .2s; text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #0e0e12; }
+  .btn-primary:hover { background: #e8961a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,166,35,.4); }
+  .btn-outline {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { background: var(--surface2); border-color: rgba(255,255,255,0.15); }
+  .btn-ghost { background: transparent; color: var(--text); }
+  .btn-ghost:hover { background: var(--surface2); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    letter-spacing: .4px; text-transform: uppercase;
+  }
+  .badge-green { background: rgba(61,203,127,.15); color: var(--green); border: 1px solid rgba(61,203,127,.25); }
+  .badge-closed { background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); }
+  .badge-cat { background: rgba(245,166,35,.12); color: var(--accent); border: 1px solid rgba(245,166,35,.2); }
+  .stars { display: inline-flex; gap: 1px; }
+  .star { color: var(--accent); font-size: 13px; }
+  .star.empty { color: var(--muted); opacity: .4; }
+
+  /* ── NAVBAR ─────────────────────────────── */
+  #navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    transition: background .3s, backdrop-filter .3s, border-color .3s;
+    border-bottom: 1px solid transparent;
+  }
+  #navbar.scrolled, #navbar.solid {
+    background: rgba(14,14,18,.92);
+    backdrop-filter: blur(16px);
+    border-color: var(--border);
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; gap: 16px;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: var(--text); flex-shrink: 0;
+  }
+  .nav-logo-mark {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-weight: 900; font-size: 18px; color: #0e0e12;
+  }
+  .nav-logo-text { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 20px; }
+  .nav-search {
+    flex: 1; max-width: 360px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 14px;
+  }
+  .nav-search input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; flex: 1;
+  }
+  .nav-search input::placeholder { color: var(--muted); }
+  .nav-links { display: flex; align-items: center; gap: 6px; }
+  .mobile-menu-btn { display: none; background: none; border: none; cursor: pointer; color: var(--text); padding: 4px; }
+
+  /* ── PAGES ─────────────────────────────── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── HERO ─────────────────────────────── */
+  #hero {
+    position: relative; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden; padding: 100px 24px 60px;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background-image: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1920&h=1080&fit=crop');
+    background-size: cover; background-position: center;
+    filter: brightness(.25) saturate(1.2);
+  }
+  .hero-overlay {
+    position: absolute; inset: 0; z-index: 1;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(245,166,35,.08) 0%, transparent 70%),
+                linear-gradient(to bottom, rgba(14,14,18,0) 0%, rgba(14,14,18,.6) 70%, var(--bg) 100%);
+  }
+  .hero-glow {
+    position: absolute; width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,166,35,.15) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -60%); z-index: 1;
+    animation: glowPulse 6s ease-in-out infinite;
+  }
+  @keyframes glowPulse { 0%,100% { opacity: .6; transform: translate(-50%,-60%) scale(1); } 50% { opacity: 1; transform: translate(-50%,-60%) scale(1.15); } }
+  .hero-content {
+    position: relative; z-index: 2; text-align: center; max-width: 760px; width: 100%;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.25);
+    border-radius: 100px; padding: 6px 16px; font-size: 12px; font-weight: 600;
+    letter-spacing: .8px; text-transform: uppercase; color: var(--accent);
+    margin-bottom: 28px;
+    animation: fadeUp .6s ease both;
+  }
+  .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 2s ease infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .hero-title {
+    font-size: clamp(42px, 8vw, 88px);
+    font-weight: 900; line-height: 1.05;
+    margin-bottom: 24px; letter-spacing: -1px;
+    animation: fadeUp .6s .1s ease both;
+  }
+  .hero-title span { color: var(--accent); }
+  .hero-subtitle {
+    font-size: clamp(16px, 2vw, 19px); color: rgba(240,239,244,.6);
+    line-height: 1.6; margin-bottom: 44px; max-width: 520px; margin-left: auto; margin-right: auto;
+    animation: fadeUp .6s .2s ease both;
+  }
+  .hero-search-wrap {
+    background: rgba(22,22,29,.85); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 18px;
+    padding: 8px; display: flex; gap: 8px; align-items: stretch;
+    max-width: 680px; margin: 0 auto 32px;
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp .6s .3s ease both;
+  }
+  .hero-search-field {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+  }
+  .hero-search-field svg { color: var(--muted); flex-shrink: 0; }
+  .hero-search-field input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; width: 100%;
+  }
+  .hero-search-field input::placeholder { color: var(--muted); }
+  .hero-search-divider { width: 1px; background: var(--border); margin: 8px 0; }
+  .hero-search-wrap .btn { flex-shrink: 0; padding: 12px 28px; font-size: 15px; border-radius: 12px; }
+  .hero-tags {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    animation: fadeUp .6s .4s ease both;
+  }
+  .hero-tag {
+    padding: 8px 18px; border-radius: 100px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    font-size: 13px; color: rgba(240,239,244,.75); cursor: pointer;
+    transition: all .2s; backdrop-filter: blur(8px); text-decoration: none;
+  }
+  .hero-tag:hover { background: rgba(245,166,35,.15); border-color: rgba(245,166,35,.35); color: var(--accent); }
+  .hero-stats {
+    display: flex; gap: 48px; justify-content: center; margin-top: 60px;
+    padding-top: 40px; border-top: 1px solid var(--border);
+    animation: fadeUp .6s .5s ease both;
+  }
+  .hero-stat-num { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; color: var(--text); }
+  .hero-stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── SECTIONS ─────────────────────────── */
+  section { padding: 80px 0; }
+  .section-header { text-align: center; margin-bottom: 52px; }
+  .section-label {
+    display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+  }
+  .section-title { font-size: clamp(28px, 4vw, 42px); font-weight: 700; line-height: 1.2; margin-bottom: 12px; }
+  .section-sub { font-size: 15px; color: var(--muted); max-width: 480px; margin: 0 auto; }
+
+  /* ── CATEGORIES ─────────────────────────── */
+  .cats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .cat-card {
+    position: relative; border-radius: 16px; overflow: hidden;
+    aspect-ratio: 1; cursor: pointer;
+    border: 1px solid var(--border); transition: transform .25s, box-shadow .25s;
+  }
+  .cat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .cat-card-bg {
+    position: absolute; inset: 0; background-size: cover; background-position: center;
+    transition: transform .4s;
+  }
+  .cat-card:hover .cat-card-bg { transform: scale(1.08); }
+  .cat-card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.8) 0%, rgba(0,0,0,.2) 100%); }
+  .cat-card-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 14px 10px; text-align: center; }
+  .cat-icon { font-size: 26px; margin-bottom: 6px; }
+  .cat-name { font-size: 13px; font-weight: 600; color: #fff; line-height: 1.2; }
+  .cat-count { font-size: 11px; color: rgba(255,255,255,.55); margin-top: 2px; }
+
+  /* ── BUSINESS GRID ─────────────────────── */
+  .biz-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .biz-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden; cursor: pointer;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+  }
+  .biz-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(255,255,255,.14); }
+  .biz-img-wrap { position: relative; height: 180px; overflow: hidden; }
+  .biz-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+  .biz-card:hover .biz-img-wrap img { transform: scale(1.07); }
+  .biz-save-btn {
+    position: absolute; top: 10px; right: 10px;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(14,14,18,.75); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; z-index: 2;
+  }
+  .biz-save-btn:hover { background: rgba(245,166,35,.2); border-color: var(--accent); }
+  .biz-save-btn.saved svg { color: var(--accent); fill: var(--accent); }
+  .biz-open-badge { position: absolute; bottom: 10px; left: 10px; z-index: 2; }
+  .biz-body { padding: 16px; }
+  .biz-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; gap: 8px; }
+  .biz-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; line-height: 1.3; flex: 1; }
+  .biz-price { font-size: 13px; color: var(--muted); font-weight: 500; flex-shrink: 0; }
+  .biz-rating { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .biz-rating-num { font-size: 13px; font-weight: 600; }
+  .biz-rating-count { font-size: 12px; color: var(--muted); }
+  .biz-meta { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .biz-cat { color: var(--accent); font-weight: 500; }
+
+  /* ── TRENDING CITIES ─────────────────── */
+  .cities-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .city-card {
+    position: relative; border-radius: 16px; overflow: hidden;
+    aspect-ratio: 4/3; cursor: pointer;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .city-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .city-card img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+  .city-card:hover img { transform: scale(1.08); }
+  .city-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 55%); }
+  .city-info { position: absolute; bottom: 10px; left: 12px; }
+  .city-name { font-size: 13px; font-weight: 700; color: #fff; }
+  .city-count { font-size: 11px; color: rgba(255,255,255,.6); }
+
+  /* ── HOW IT WORKS ─────────────────────── */
+  .how-bg { background: var(--surface); }
+  .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 860px; margin: 0 auto; }
+  .step-card { text-align: center; padding: 36px 24px; }
+  .step-num {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: linear-gradient(135deg, rgba(245,166,35,.2), rgba(245,166,35,.05));
+    border: 1px solid rgba(245,166,35,.25);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--accent);
+    margin: 0 auto 20px;
+  }
+  .step-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .step-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* ── CTA ─────────────────────────────── */
+  .cta-box {
+    background: linear-gradient(135deg, #1a1208, #211510);
+    border: 1px solid rgba(245,166,35,.2);
+    border-radius: 24px; padding: 80px 40px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .cta-glow {
+    position: absolute; width: 400px; height: 400px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,166,35,.12) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    animation: glowPulse 5s ease-in-out infinite;
+  }
+  .cta-box h2 { font-size: clamp(28px,4vw,44px); margin-bottom: 16px; position: relative; z-index: 1; }
+  .cta-box p { color: var(--muted); font-size: 16px; margin-bottom: 36px; position: relative; z-index: 1; }
+  .cta-box .btn { position: relative; z-index: 1; padding: 14px 36px; font-size: 16px; }
+
+  /* ── FOOTER ─────────────────────────── */
+  footer { background: var(--surface); border-top: 1px solid var(--border); padding: 60px 0 32px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 48px; }
+  .footer-brand p { font-size: 14px; color: var(--muted); margin-top: 14px; line-height: 1.7; max-width: 240px; }
+  .footer-col h4 { font-size: 13px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  .footer-col a { display: block; font-size: 14px; color: rgba(240,239,244,.7); text-decoration: none; margin-bottom: 10px; transition: color .2s; }
+  .footer-col a:hover { color: var(--accent); }
+  .footer-bottom { border-top: 1px solid var(--border); padding-top: 28px; display: flex; align-items: center; justify-content: space-between; }
+  .footer-bottom p { font-size: 13px; color: var(--muted); }
+
+  /* ── SEARCH PAGE ─────────────────────── */
+  .search-layout { display: flex; gap: 24px; padding-top: 24px; }
+  .filter-sidebar {
+    width: 260px; flex-shrink: 0; position: sticky; top: 84px; align-self: flex-start;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+  }
+  .filter-title { font-size: 14px; font-weight: 700; margin-bottom: 20px; }
+  .filter-section { margin-bottom: 24px; }
+  .filter-section-title {
+    font-size: 12px; font-weight: 600; letter-spacing: .8px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+  }
+  .filter-section-title svg { transition: transform .2s; }
+  .filter-section.collapsed .filter-section-title svg { transform: rotate(-90deg); }
+  .filter-section.collapsed .filter-body { display: none; }
+  .rating-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px; border-radius: 8px;
+    background: none; border: none; cursor: pointer; color: var(--text);
+    font-family: 'DM Sans',sans-serif; font-size: 13px;
+    width: 100%; transition: background .2s;
+  }
+  .rating-btn:hover { background: var(--surface2); }
+  .rating-btn.active { background: rgba(245,166,35,.1); color: var(--accent); }
+  .price-btns { display: flex; gap: 6px; }
+  .price-btn {
+    flex: 1; padding: 7px 4px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--muted); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .2s; text-align: center;
+  }
+  .price-btn.active { background: var(--accent); color: #0e0e12; border-color: var(--accent); }
+  .check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; padding: 4px 0; }
+  .check-label input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); }
+  .search-results-area { flex: 1; min-width: 0; }
+  .search-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .search-topbar h1 { font-size: 22px; font-weight: 700; }
+  .search-count { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .search-biz-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .no-results { text-align: center; padding: 80px 20px; color: var(--muted); font-size: 16px; }
+  .map-panel {
+    width: 300px; flex-shrink: 0; position: sticky; top: 84px; align-self: flex-start;
+    height: calc(100vh - 100px); border-radius: 16px; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+  .map-placeholder {
+    width: 100%; height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    background: linear-gradient(135deg, var(--surface), var(--surface2));
+    color: var(--muted); font-size: 14px; padding: 20px; text-align: center;
+  }
+  .map-placeholder svg { opacity: .3; }
+
+  /* ── BUSINESS DETAIL ─────────────────── */
+  .photo-gallery { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; height: 380px; }
+  .photo-gallery-main { border-radius: 16px 0 0 16px; overflow: hidden; }
+  .photo-gallery-side { display: grid; grid-rows: 1fr 1fr; gap: 6px; }
+  .photo-gallery-side img:first-child { border-radius: 0 16px 0 0; }
+  .photo-gallery-side img:last-child { border-radius: 0 0 16px 0; }
+  .photo-gallery img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: filter .2s; }
+  .photo-gallery img:hover { filter: brightness(.85); }
+  .detail-layout { display: flex; gap: 32px; padding: 32px 0; }
+  .detail-main { flex: 1; min-width: 0; }
+  .detail-sidebar { width: 300px; flex-shrink: 0; }
+  .detail-sidebar-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+  }
+  .detail-info-row { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .detail-info-row:last-child { border-bottom: none; }
+  .detail-info-row svg { color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  .detail-info-row a { color: var(--accent); text-decoration: none; font-size: 14px; }
+  .detail-info-row a:hover { text-decoration: underline; }
+  .detail-info-row span { font-size: 14px; color: var(--text); }
+  .hours-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+  .hours-row .day { color: var(--muted); }
+  .hours-row .time { font-weight: 500; }
+  .hours-row.today .day, .hours-row.today .time { color: var(--accent); font-weight: 600; }
+  .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0 32px; }
+  .detail-about { margin-bottom: 32px; }
+  .detail-about h2, .detail-reviews h2 { font-size: 20px; margin-bottom: 12px; }
+  .detail-about p { font-size: 15px; color: var(--muted); line-height: 1.7; }
+  .review-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+  .review-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .review-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+  .review-user { font-weight: 600; font-size: 14px; }
+  .review-date { font-size: 12px; color: var(--muted); }
+  .review-text { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
+  .review-helpful { font-size: 12px; color: var(--muted); }
+  .helpful-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--muted); transition: all .2s; }
+  .helpful-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── WRITE REVIEW ─────────────────────── */
+  .review-form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 640px; margin: 0 auto; }
+  .star-picker { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+  .star-pick-btn { background: none; border: none; cursor: pointer; font-size: 40px; transition: transform .15s; color: var(--muted); }
+  .star-pick-btn:hover, .star-pick-btn.active { color: var(--accent); transform: scale(1.2); }
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .form-input, .form-textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  .form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-textarea { resize: vertical; min-height: 140px; }
+  .photo-upload {
+    border: 2px dashed var(--border); border-radius: 14px; padding: 36px 20px;
+    text-align: center; cursor: pointer; transition: border-color .2s;
+  }
+  .photo-upload:hover { border-color: rgba(245,166,35,.4); }
+  .photo-upload-icon { font-size: 32px; margin-bottom: 10px; }
+  .photo-upload p { font-size: 13px; color: var(--muted); }
+  .rating-label { text-align: center; font-size: 14px; font-weight: 600; color: var(--accent); height: 22px; }
+
+  /* ── PROFILE ─────────────────────────── */
+  .profile-header { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px; margin-bottom: 28px; }
+  .profile-top { display: flex; align-items: flex-start; gap: 24px; }
+  .profile-avatar-wrap { position: relative; }
+  .profile-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(245,166,35,.3); }
+  .profile-info { flex: 1; }
+  .profile-name { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  .profile-meta { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .profile-bio { font-size: 14px; color: var(--muted); max-width: 500px; line-height: 1.6; }
+  .profile-stats { display: flex; gap: 28px; margin-left: auto; text-align: center; }
+  .profile-stat-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; }
+  .profile-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .tabs { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 24px; width: fit-content; }
+  .tab-btn {
+    padding: 9px 20px; border-radius: 9px; border: none; cursor: pointer;
+    background: none; color: var(--muted); font-family: 'DM Sans',sans-serif;
+    font-size: 13px; font-weight: 600; transition: all .2s; display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn.active { background: var(--surface2); color: var(--text); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+  .photos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .photos-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; cursor: pointer; transition: transform .2s; }
+  .photos-grid img:hover { transform: scale(1.03); }
+  .profile-biz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+  /* ── SAVED BUSINESSES ─────────────────── */
+  .saved-biz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+  /* ── MODAL ────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.85); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.hidden { display: none !important; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; max-width: 480px; width: 100%;
+    animation: modalIn .25s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: scale(.94) translateY(16px); } to { opacity: 1; transform: none; } }
+  .modal h3 { font-size: 22px; margin-bottom: 8px; }
+  .modal p { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-close-x { position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; }
+
+  /* ── TOAST ────────────────────────────── */
+  #toast-container { position: fixed; bottom: 28px; right: 28px; z-index: 300; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 18px; font-size: 14px;
+    box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px;
+    animation: toastIn .3s ease; max-width: 320px;
+  }
+  .toast.toast-success { border-color: rgba(61,203,127,.3); }
+  .toast.toast-error { border-color: rgba(224,108,117,.3); }
+  .toast-icon { font-size: 18px; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+  /* ── LIGHTBOX ────────────────────────── */
+  #lightbox {
+    position: fixed; inset: 0; z-index: 250; background: rgba(0,0,0,.95);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #lightbox.hidden { display: none !important; }
+  #lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 12px; }
+  #lightbox-close { position: absolute; top: 20px; right: 24px; background: none; border: none; color: #fff; font-size: 32px; cursor: pointer; }
+
+  /* ── SCROLLBAR ───────────────────────── */
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── RESPONSIVE ─────────────────────── */
+  @media (max-width: 1024px) {
+    .cats-grid, .cities-grid { grid-template-columns: repeat(3, 1fr); }
+    .biz-grid { grid-template-columns: repeat(2, 1fr); }
+    .map-panel { display: none; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .profile-biz-grid { grid-template-columns: repeat(2, 1fr); }
+    .saved-biz-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .nav-search, .nav-links .btn-outline, .nav-links .btn-ghost { display: none; }
+    .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+    .hero-stats { gap: 24px; }
+    .hero-stat-num { font-size: 24px; }
+    .cats-grid, .cities-grid { grid-template-columns: repeat(2, 1fr); }
+    .biz-grid { grid-template-columns: 1fr; }
+    .steps-grid { grid-template-columns: 1fr; gap: 0; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .detail-layout { flex-direction: column; }
+    .detail-sidebar { width: 100%; }
+    .photo-gallery { height: 220px; }
+    .photo-gallery-side { display: none; }
+    .photo-gallery { grid-template-columns: 1fr; }
+    .profile-top { flex-wrap: wrap; }
+    .profile-stats { margin-left: 0; }
+    .search-layout { flex-direction: column; }
+    .filter-sidebar { width: 100%; position: static; }
+    .search-biz-grid { grid-template-columns: 1fr; }
+    .profile-biz-grid, .saved-biz-grid { grid-template-columns: 1fr; }
+    .hero-search-wrap { flex-direction: column; gap: 2px; }
+    .hero-search-divider { width: auto; height: 1px; margin: 0 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ NAVBAR ════════════════ -->
+<nav id="navbar">
+  <div class="container">
+    <div class="nav-inner">
+      <a class="nav-logo" href="#" onclick="showPage('home')">
+        <div class="nav-logo-mark">L</div>
+        <span class="nav-logo-text">Locale</span>
+      </a>
+      <div class="nav-search" id="nav-search-wrap" style="display:none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="nav-search-input" placeholder="Search businesses..." onkeydown="if(event.key==='Enter')doNavSearch()" />
+        <button onclick="doNavSearch()" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;font-weight:600">Go</button>
+      </div>
+      <div class="nav-links">
+        <button class="btn btn-ghost" onclick="showPage('saved')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Saved
+        </button>
+        <button class="btn btn-ghost" onclick="showPage('profile')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Profile
+        </button>
+        <button class="btn btn-primary" onclick="openModal('login')">Log In</button>
+        <button class="btn btn-outline" onclick="openModal('signup')" style="margin-left:4px">Sign Up</button>
+      </div>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+        <svg id="menu-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div id="mobile-menu" class="hidden" style="position:fixed;top:64px;left:0;right:0;z-index:99;background:rgba(14,14,18,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;flex-direction:column;gap:10px;">
+  <button class="btn btn-ghost" style="justify-content:flex-start" onclick="showPage('saved');toggleMobileMenu()">📌 Saved Businesses</button>
+  <button class="btn btn-ghost" style="justify-content:flex-start" onclick="showPage('profile');toggleMobileMenu()">👤 My Profile</button>
+  <div style="display:flex;gap:8px;padding-top:8px">
+    <button class="btn btn-primary" style="flex:1" onclick="openModal('login');toggleMobileMenu()">Log In</button>
+    <button class="btn btn-outline" style="flex:1" onclick="openModal('signup');toggleMobileMenu()">Sign Up</button>
+  </div>
+</div>
+
+<!-- ════════════════ HOME PAGE ════════════════ -->
+<div id="page-home" class="page active">
+
+  <!-- Hero -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <div class="hero-eyebrow-dot"></div>
+        San Francisco's Best Local Guide
+      </div>
+      <h1 class="hero-title">
+        Discover Hidden<br>
+        <span>Local Gems</span>
+      </h1>
+      <p class="hero-subtitle">
+        Find and review the best restaurants, cafes, nightlife and services in your neighborhood — curated by people who actually live there.
+      </p>
+      <div class="hero-search-wrap">
+        <div class="hero-search-field" style="flex:1.4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="hero-q" placeholder="Restaurants, cafes, bars..." />
+        </div>
+        <div class="hero-search-divider"></div>
+        <div class="hero-search-field">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <input type="text" id="hero-loc" value="San Francisco, CA" placeholder="City, neighborhood..." />
+        </div>
+        <button class="btn btn-primary" onclick="doHeroSearch()">Search</button>
+      </div>
+      <div class="hero-tags">
+        <a class="hero-tag" onclick="doQuickSearch('Restaurants')">🍽 Restaurants</a>
+        <a class="hero-tag" onclick="doQuickSearch('Cafes')">☕ Cafes</a>
+        <a class="hero-tag" onclick="doQuickSearch('Nightlife')">🍸 Nightlife</a>
+        <a class="hero-tag" onclick="doQuickSearch('Shopping')">🛍 Shopping</a>
+        <a class="hero-tag" onclick="doQuickSearch('Beauty')">✨ Beauty</a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-num">16+</div>
+          <div class="hero-stat-label">Local Businesses</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">2.4K</div>
+          <div class="hero-stat-label">Verified Reviews</div>
+        </div>
+        <div>
+          <div class="hero-stat-num">6</div>
+          <div class="hero-stat-label">Neighborhoods</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section>
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Browse</div>
+        <h2 class="section-title">Popular Categories</h2>
+        <p class="section-sub">Explore businesses by what you need</p>
+      </div>
+      <div class="cats-grid" id="categories-grid"></div>
+    </div>
+  </section>
+
+  <!-- Featured Businesses -->
+  <section style="background:var(--surface);padding:80px 0">
+    <div class="container">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:48px">
+        <div>
+          <div class="section-label">Curated</div>
+          <h2 class="section-title" style="margin-bottom:8px">Featured Businesses</h2>
+          <p style="color:var(--muted);font-size:14px">Hand-picked favorites from our community</p>
+        </div>
+        <button class="btn btn-outline" onclick="doQuickSearch('')">View All →</button>
+      </div>
+      <div class="biz-grid" id="featured-grid"></div>
+    </div>
+  </section>
+
+  <!-- Trending Cities -->
+  <section>
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Explore</div>
+        <h2 class="section-title">Trending Cities</h2>
+        <p class="section-sub">Popular destinations people are discovering</p>
+      </div>
+      <div class="cities-grid" id="cities-grid"></div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-bg">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Simple</div>
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-sub">Three steps to find your next favorite spot</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">01</div>
+          <div class="step-title">Search</div>
+          <p class="step-desc">Enter what you're looking for and where. Our smart search surfaces the best matches instantly.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">02</div>
+          <div class="step-title">Compare</div>
+          <p class="step-desc">Read genuine reviews, check ratings, browse photos and compare prices to make the perfect choice.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">03</div>
+          <div class="step-title">Visit & Review</div>
+          <p class="step-desc">Experience the business and share your honest review to help others in the community discover it too.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section>
+    <div class="container">
+      <div class="cta-box">
+        <div class="cta-glow"></div>
+        <h2>Ready to Explore?</h2>
+        <p>Join thousands of locals discovering the best businesses in their neighborhoods every day.</p>
+        <button class="btn btn-primary" onclick="doQuickSearch('')" style="font-size:16px;padding:14px 36px">Start Exploring</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <div class="nav-logo-mark">L</div>
+            <span style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700">Locale</span>
+          </div>
+          <p>Your trusted guide to the best local businesses in San Francisco and beyond.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Explore</h4>
+          <a href="#" onclick="doQuickSearch('Restaurants')">Restaurants</a>
+          <a href="#" onclick="doQuickSearch('Cafes')">Cafes</a>
+          <a href="#" onclick="doQuickSearch('Nightlife')">Nightlife</a>
+          <a href="#" onclick="doQuickSearch('Shopping')">Shopping</a>
+        </div>
+        <div class="footer-col">
+          <h4>Account</h4>
+          <a href="#" onclick="showPage('profile')">My Profile</a>
+          <a href="#" onclick="showPage('saved')">Saved Places</a>
+          <a href="#" onclick="openModal('login')">Log In</a>
+          <a href="#" onclick="openModal('signup')">Sign Up</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#" onclick="showToast('About page coming soon!','info')">About</a>
+          <a href="#" onclick="showToast('Blog coming soon!','info')">Blog</a>
+          <a href="#" onclick="showToast('Careers page coming soon!','info')">Careers</a>
+          <a href="#" onclick="showToast('Support coming soon!','info')">Support</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Locale. All rights reserved.</p>
+        <p>Made with ♥ in San Francisco</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ════════════════ SEARCH PAGE ════════════════ -->
+<div id="page-search" class="page" style="padding-top:80px;min-height:100vh">
+  <div class="container">
+    <div class="search-topbar">
+      <div>
+        <h1 id="search-heading">All Businesses</h1>
+        <p class="search-count" id="search-count">16 businesses found</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="nav-search" style="width:280px;display:flex">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="search-input" placeholder="Search businesses..." style="flex:1" onkeydown="if(event.key==='Enter')runSearch()" />
+        </div>
+        <button class="btn btn-primary" onclick="runSearch()">Search</button>
+      </div>
+    </div>
+    <div class="search-layout">
+      <div class="filter-sidebar">
+        <div class="filter-title">Filters</div>
+
+        <div class="filter-section" id="fs-rating">
+          <div class="filter-section-title" onclick="toggleFilterSection('fs-rating')">
+            Rating
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="filter-body" id="rating-buttons">
+            <button class="rating-btn" onclick="setRating(5)">★★★★★ <span style="color:var(--muted);font-size:12px;margin-left:2px">& up</span></button>
+            <button class="rating-btn" onclick="setRating(4)">★★★★☆ <span style="color:var(--muted);font-size:12px;margin-left:2px">& up</span></button>
+            <button class="rating-btn" onclick="setRating(3)">★★★☆☆ <span style="color:var(--muted);font-size:12px;margin-left:2px">& up</span></button>
+            <button class="rating-btn" onclick="setRating(0)"><span style="color:var(--muted);font-size:12px">Any rating</span></button>
+          </div>
+        </div>
+
+        <div class="filter-section" id="fs-price">
+          <div class="filter-section-title" onclick="toggleFilterSection('fs-price')">
+            Price Range
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="filter-body">
+            <div class="price-btns">
+              <button class="price-btn" onclick="togglePrice(this,'$')">$</button>
+              <button class="price-btn" onclick="togglePrice(this,'$$')">$$</button>
+              <button class="price-btn" onclick="togglePrice(this,'$$$')">$$$</button>
+              <button class="price-btn" onclick="togglePrice(this,'$$$$')">$$$$</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-section" id="fs-cat">
+          <div class="filter-section-title" onclick="toggleFilterSection('fs-cat')">
+            Category
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="filter-body" id="cat-checkboxes"></div>
+        </div>
+
+        <div class="filter-section" id="fs-open">
+          <div class="filter-section-title" onclick="toggleFilterSection('fs-open')">
+            Availability
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="filter-body">
+            <label class="check-label"><input type="checkbox" id="filter-open" onchange="applyFilters()" /> Open Now Only</label>
+          </div>
+        </div>
+
+        <button class="btn btn-outline" style="width:100%;margin-top:8px;justify-content:center" onclick="resetFilters()">Reset Filters</button>
+      </div>
+
+      <div class="search-results-area">
+        <div class="search-biz-grid" id="search-results-grid"></div>
+        <div class="no-results hidden" id="no-results">No businesses found matching your criteria.</div>
+      </div>
+
+      <div class="map-panel">
+        <div class="map-placeholder">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div style="font-weight:600;margin-bottom:4px">Interactive Map</div>
+          <p style="font-size:12px;color:var(--muted)">Showing <span id="map-count">16</span> businesses in San Francisco</p>
+          <div style="margin-top:16px;width:100%">
+            <div id="map-pins" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ BUSINESS DETAIL ════════════════ -->
+<div id="page-business" class="page" style="padding-top:80px;min-height:100vh">
+  <div class="container" id="business-detail-content"></div>
+</div>
+
+<!-- ════════════════ WRITE REVIEW ════════════════ -->
+<div id="page-review" class="page" style="padding-top:100px;min-height:100vh;padding-bottom:60px">
+  <div class="container" style="max-width:680px">
+    <div id="review-form-content"></div>
+  </div>
+</div>
+
+<!-- ════════════════ PROFILE ════════════════ -->
+<div id="page-profile" class="page" style="padding-top:90px;min-height:100vh;padding-bottom:60px">
+  <div class="container" id="profile-content"></div>
+</div>
+
+<!-- ════════════════ SAVED ════════════════ -->
+<div id="page-saved" class="page" style="padding-top:90px;min-height:100vh;padding-bottom:60px">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:36px">
+      <div style="width:44px;height:44px;border-radius:12px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.2);display:flex;align-items:center;justify-content:center;font-size:20px">🔖</div>
+      <div>
+        <h1 style="font-size:24px;font-weight:700">Saved Businesses</h1>
+        <p style="font-size:13px;color:var(--muted)" id="saved-count-label">4 saved</p>
+      </div>
+    </div>
+    <div class="saved-biz-grid" id="saved-grid"></div>
+    <div class="no-results hidden" id="saved-empty">
+      <div style="font-size:40px;margin-bottom:12px">🔖</div>
+      <p>No saved businesses yet. Browse and bookmark your favorites!</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="doQuickSearch('')">Explore Businesses</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ MODALS ════════════════ -->
+
+<!-- Login Modal -->
+<div class="modal-overlay hidden" id="modal-login" onclick="if(event.target===this)closeModal('login')">
+  <div class="modal" style="position:relative">
+    <button class="modal-close-x" onclick="closeModal('login')">✕</button>
+    <h3>Welcome back</h3>
+    <p>Sign in to save businesses, write reviews, and more.</p>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" placeholder="you@example.com" id="login-email"/></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" placeholder="••••••••" id="login-pass"/></div>
+    <div class="modal-actions" style="flex-direction:column;gap:10px">
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="submitLogin()">Log In</button>
+      <p style="text-align:center;font-size:13px;color:var(--muted)">Don't have an account? <a href="#" style="color:var(--accent)" onclick="closeModal('login');openModal('signup')">Sign up</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- Signup Modal -->
+<div class="modal-overlay hidden" id="modal-signup" onclick="if(event.target===this)closeModal('signup')">
+  <div class="modal" style="position:relative">
+    <button class="modal-close-x" onclick="closeModal('signup')">✕</button>
+    <h3>Create an account</h3>
+    <p>Join thousands of locals discovering the best businesses nearby.</p>
+    <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" placeholder="Jane Smith" id="signup-name"/></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" placeholder="you@example.com" id="signup-email"/></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" placeholder="At least 8 characters" id="signup-pass"/></div>
+    <div class="modal-actions" style="flex-direction:column;gap:10px">
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="submitSignup()">Create Account</button>
+      <p style="text-align:center;font-size:13px;color:var(--muted)">Already have an account? <a href="#" style="color:var(--accent)" onclick="closeModal('signup');openModal('login')">Log in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay hidden" id="modal-share" onclick="if(event.target===this)closeModal('share')">
+  <div class="modal" style="position:relative">
+    <button class="modal-close-x" onclick="closeModal('share')">✕</button>
+    <h3>Share this business</h3>
+    <p>Copy the link below to share with friends.</p>
+    <div style="display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:20px">
+      <span style="font-size:13px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="share-url">https://locale.app/business/1</span>
+      <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="copyLink()">Copy</button>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="showToast('Shared to Twitter!','success');closeModal('share')">🐦 Twitter</button>
+      <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="showToast('Shared to Facebook!','success');closeModal('share')">📘 Facebook</button>
+      <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="showToast('Copied to clipboard!','success');closeModal('share')">🔗 Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Lightbox -->
+<div id="lightbox" class="hidden">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Photo" />
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════
+const businesses = [
+  { id:"1", name:"The Golden Fork", image:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=400&fit=crop", rating:4.7, reviewCount:342, priceRange:"$$$", category:"Restaurants", categories:["Italian","Fine Dining","Wine Bar"], location:"Downtown", address:"456 Market St, San Francisco, CA 94105", phone:"(415) 555-0123", website:"https://goldenfork.com", description:"An exquisite Italian dining experience in the heart of downtown. Chef Marco brings authentic flavors from Tuscany with a modern Californian twist. The handmade pasta and extensive wine list make this a must-visit for any foodie.", hours:[{day:"Mon",time:"11:00 AM – 10:00 PM"},{day:"Tue",time:"11:00 AM – 10:00 PM"},{day:"Wed",time:"11:00 AM – 10:00 PM"},{day:"Thu",time:"11:00 AM – 11:00 PM"},{day:"Fri",time:"11:00 AM – 12:00 AM"},{day:"Sat",time:"10:00 AM – 12:00 AM"},{day:"Sun",time:"10:00 AM – 9:00 PM"}], images:["https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1559339352-11d035aa65de?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1551218808-94e220e084d2?w=900&h=600&fit=crop"], isSaved:true, isOpen:true, distance:"0.3 mi" },
+  { id:"2", name:"Brew & Bean", image:"https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&h=400&fit=crop", rating:4.5, reviewCount:218, priceRange:"$$", category:"Cafes", categories:["Coffee","Breakfast","Pastries"], location:"Mission District", address:"789 Valencia St, San Francisco, CA 94110", phone:"(415) 555-0456", website:"https://brewandbean.com", description:"Artisan coffee roasted in-house daily. A cozy neighborhood spot with the best pour-overs in the city. The croissants are baked fresh every morning.", hours:[{day:"Mon",time:"6:00 AM – 7:00 PM"},{day:"Tue",time:"6:00 AM – 7:00 PM"},{day:"Wed",time:"6:00 AM – 7:00 PM"},{day:"Thu",time:"6:00 AM – 7:00 PM"},{day:"Fri",time:"6:00 AM – 8:00 PM"},{day:"Sat",time:"7:00 AM – 8:00 PM"},{day:"Sun",time:"7:00 AM – 6:00 PM"}], images:["https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"1.2 mi" },
+  { id:"3", name:"Neon Nights Lounge", image:"https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=600&h=400&fit=crop", rating:4.3, reviewCount:156, priceRange:"$$$", category:"Nightlife", categories:["Cocktail Bar","Live Music","Lounge"], location:"SoMa", address:"123 Folsom St, San Francisco, CA 94105", phone:"(415) 555-0789", website:"https://neonnights.com", description:"Premium cocktails and live jazz in a stunning art-deco setting. The place to be on Friday nights in SoMa.", hours:[{day:"Mon",time:"Closed"},{day:"Tue",time:"5:00 PM – 1:00 AM"},{day:"Wed",time:"5:00 PM – 1:00 AM"},{day:"Thu",time:"5:00 PM – 2:00 AM"},{day:"Fri",time:"5:00 PM – 2:00 AM"},{day:"Sat",time:"5:00 PM – 2:00 AM"},{day:"Sun",time:"Closed"}], images:["https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=900&h=600&fit=crop"], isSaved:false, isOpen:false, distance:"0.8 mi" },
+  { id:"4", name:"Urban Threads", image:"https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=400&fit=crop", rating:4.6, reviewCount:89, priceRange:"$$", category:"Shopping", categories:["Clothing","Boutique","Accessories"], location:"Hayes Valley", address:"321 Hayes St, San Francisco, CA 94102", phone:"(415) 555-0321", website:"https://urbanthreads.com", description:"Curated fashion from local and international designers. Sustainable style for the modern urbanite. New collections arrive every month.", hours:[{day:"Mon",time:"10:00 AM – 7:00 PM"},{day:"Tue",time:"10:00 AM – 7:00 PM"},{day:"Wed",time:"10:00 AM – 7:00 PM"},{day:"Thu",time:"10:00 AM – 8:00 PM"},{day:"Fri",time:"10:00 AM – 8:00 PM"},{day:"Sat",time:"10:00 AM – 8:00 PM"},{day:"Sun",time:"11:00 AM – 6:00 PM"}], images:["https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=900&h=600&fit=crop"], isSaved:true, isOpen:true, distance:"1.5 mi" },
+  { id:"5", name:"Glow Beauty Studio", image:"https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=400&fit=crop", rating:4.8, reviewCount:275, priceRange:"$$$", category:"Beauty", categories:["Spa","Hair Salon","Skincare"], location:"Pacific Heights", address:"555 Fillmore St, San Francisco, CA 94117", phone:"(415) 555-0555", website:"https://glowbeauty.com", description:"Award-winning beauty studio offering premium hair, skin, and wellness services in a luxurious setting. Online booking available.", hours:[{day:"Mon",time:"9:00 AM – 7:00 PM"},{day:"Tue",time:"9:00 AM – 7:00 PM"},{day:"Wed",time:"9:00 AM – 7:00 PM"},{day:"Thu",time:"9:00 AM – 8:00 PM"},{day:"Fri",time:"9:00 AM – 8:00 PM"},{day:"Sat",time:"9:00 AM – 6:00 PM"},{day:"Sun",time:"10:00 AM – 5:00 PM"}], images:["https://images.unsplash.com/photo-1560066984-138dadb4c035?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"2.1 mi" },
+  { id:"6", name:"Handy Home Pros", image:"https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=400&fit=crop", rating:4.4, reviewCount:132, priceRange:"$$", category:"Home Services", categories:["Plumbing","Electrical","General Repair"], location:"Sunset District", address:"890 Irving St, San Francisco, CA 94122", phone:"(415) 555-0890", website:"https://handyhomepros.com", description:"Reliable and affordable home repair services. Licensed professionals you can trust for any job, big or small.", hours:[{day:"Mon",time:"8:00 AM – 6:00 PM"},{day:"Tue",time:"8:00 AM – 6:00 PM"},{day:"Wed",time:"8:00 AM – 6:00 PM"},{day:"Thu",time:"8:00 AM – 6:00 PM"},{day:"Fri",time:"8:00 AM – 6:00 PM"},{day:"Sat",time:"9:00 AM – 4:00 PM"},{day:"Sun",time:"Closed"}], images:["https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"3.4 mi" },
+  { id:"7", name:"Sakura Sushi", image:"https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&h=400&fit=crop", rating:4.9, reviewCount:412, priceRange:"$$$$", category:"Restaurants", categories:["Japanese","Sushi","Omakase"], location:"Japantown", address:"1600 Post St, San Francisco, CA 94115", phone:"(415) 555-1600", website:"https://sakurasushi.com", description:"Authentic omakase experience by Chef Tanaka. Fresh fish flown in daily from Tokyo's Tsukiji market. Reservations required.", hours:[{day:"Mon",time:"Closed"},{day:"Tue",time:"5:30 PM – 10:00 PM"},{day:"Wed",time:"5:30 PM – 10:00 PM"},{day:"Thu",time:"5:30 PM – 10:00 PM"},{day:"Fri",time:"5:30 PM – 11:00 PM"},{day:"Sat",time:"12:00 PM – 11:00 PM"},{day:"Sun",time:"12:00 PM – 9:00 PM"}], images:["https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1553621042-f6e147245754?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=900&h=600&fit=crop"], isSaved:true, isOpen:true, distance:"1.8 mi" },
+  { id:"8", name:"The Rustic Table", image:"https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=600&h=400&fit=crop", rating:4.2, reviewCount:198, priceRange:"$$", category:"Restaurants", categories:["American","Brunch","Farm-to-Table"], location:"Noe Valley", address:"3800 24th St, San Francisco, CA 94114", phone:"(415) 555-3800", website:"https://rustictable.com", description:"Farm-to-table American cuisine with a focus on sustainable, locally-sourced ingredients. Famous weekend brunch that draws lines around the block.", hours:[{day:"Mon",time:"8:00 AM – 9:00 PM"},{day:"Tue",time:"8:00 AM – 9:00 PM"},{day:"Wed",time:"8:00 AM – 9:00 PM"},{day:"Thu",time:"8:00 AM – 10:00 PM"},{day:"Fri",time:"8:00 AM – 10:00 PM"},{day:"Sat",time:"8:00 AM – 10:00 PM"},{day:"Sun",time:"8:00 AM – 9:00 PM"}], images:["https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"2.5 mi" },
+  { id:"9", name:"Pho King Delicious", image:"https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600&h=400&fit=crop", rating:4.6, reviewCount:287, priceRange:"$", category:"Restaurants", categories:["Vietnamese","Soup","Asian"], location:"Tenderloin", address:"230 Larkin St, San Francisco, CA 94102", phone:"(415) 555-2300", website:"https://phokingdelicious.com", description:"Authentic Vietnamese pho and banh mi made with family recipes passed down three generations. The bone broth simmers for 24 hours.", hours:[{day:"Mon",time:"9:00 AM – 9:00 PM"},{day:"Tue",time:"9:00 AM – 9:00 PM"},{day:"Wed",time:"9:00 AM – 9:00 PM"},{day:"Thu",time:"9:00 AM – 10:00 PM"},{day:"Fri",time:"9:00 AM – 10:00 PM"},{day:"Sat",time:"10:00 AM – 10:00 PM"},{day:"Sun",time:"10:00 AM – 8:00 PM"}], images:["https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1555126634-323283e090fa?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"0.6 mi" },
+  { id:"10", name:"Velvet Espresso", image:"https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=600&h=400&fit=crop", rating:4.7, reviewCount:164, priceRange:"$$", category:"Cafes", categories:["Coffee","Desserts","Wifi"], location:"North Beach", address:"580 Columbus Ave, San Francisco, CA 94133", phone:"(415) 555-5800", website:"https://velvetespresso.com", description:"Third-wave coffee shop with single-origin beans and house-made pastries. A paradise for remote workers with lightning-fast wifi.", hours:[{day:"Mon",time:"6:30 AM – 8:00 PM"},{day:"Tue",time:"6:30 AM – 8:00 PM"},{day:"Wed",time:"6:30 AM – 8:00 PM"},{day:"Thu",time:"6:30 AM – 8:00 PM"},{day:"Fri",time:"6:30 AM – 9:00 PM"},{day:"Sat",time:"7:00 AM – 9:00 PM"},{day:"Sun",time:"7:00 AM – 7:00 PM"}], images:["https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1511920170033-f8396924c348?w=900&h=600&fit=crop"], isSaved:true, isOpen:true, distance:"1.0 mi" },
+  { id:"11", name:"Luna Rooftop Bar", image:"https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=600&h=400&fit=crop", rating:4.4, reviewCount:203, priceRange:"$$$", category:"Nightlife", categories:["Rooftop Bar","Cocktails","Views"], location:"Financial District", address:"101 California St, San Francisco, CA 94111", phone:"(415) 555-1010", website:"https://lunarooftop.com", description:"Skyline views, craft cocktails, and small plates 32 floors above the city. The sunset happy hour is legendary.", hours:[{day:"Mon",time:"Closed"},{day:"Tue",time:"4:00 PM – 12:00 AM"},{day:"Wed",time:"4:00 PM – 12:00 AM"},{day:"Thu",time:"4:00 PM – 1:00 AM"},{day:"Fri",time:"4:00 PM – 2:00 AM"},{day:"Sat",time:"3:00 PM – 2:00 AM"},{day:"Sun",time:"3:00 PM – 11:00 PM"}], images:["https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"0.4 mi" },
+  { id:"12", name:"The Vintage Rack", image:"https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop", rating:4.3, reviewCount:76, priceRange:"$", category:"Shopping", categories:["Vintage","Thrift","Clothing"], location:"Haight-Ashbury", address:"1475 Haight St, San Francisco, CA 94117", phone:"(415) 555-1475", website:"https://thevintagerack.com", description:"Hand-curated vintage clothing and accessories from the '60s to '90s. Treasure hunting at its finest.", hours:[{day:"Mon",time:"9:00 AM – 9:00 PM"},{day:"Tue",time:"9:00 AM – 9:00 PM"},{day:"Wed",time:"9:00 AM – 9:00 PM"},{day:"Thu",time:"9:00 AM – 10:00 PM"},{day:"Fri",time:"9:00 AM – 10:00 PM"},{day:"Sat",time:"10:00 AM – 10:00 PM"},{day:"Sun",time:"10:00 AM – 8:00 PM"}], images:["https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"2.3 mi" },
+  { id:"13", name:"Zen Wellness Spa", image:"https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&h=400&fit=crop", rating:4.9, reviewCount:310, priceRange:"$$$$", category:"Beauty", categories:["Spa","Massage","Wellness"], location:"Marina District", address:"2100 Chestnut St, San Francisco, CA 94123", phone:"(415) 555-2100", website:"https://zenwellness.com", description:"A sanctuary of tranquility offering Japanese-inspired spa treatments. Hot stone massages, aromatherapy, and rejuvenating facials.", hours:[{day:"Mon",time:"10:00 AM – 8:00 PM"},{day:"Tue",time:"10:00 AM – 8:00 PM"},{day:"Wed",time:"10:00 AM – 8:00 PM"},{day:"Thu",time:"10:00 AM – 9:00 PM"},{day:"Fri",time:"10:00 AM – 9:00 PM"},{day:"Sat",time:"9:00 AM – 9:00 PM"},{day:"Sun",time:"9:00 AM – 7:00 PM"}], images:["https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1540555700478-4be289fbec6d?w=900&h=600&fit=crop"], isSaved:true, isOpen:true, distance:"1.7 mi" },
+  { id:"14", name:"CleanSweep Services", image:"https://images.unsplash.com/photo-1558317374-067fb5f30001?w=600&h=400&fit=crop", rating:4.5, reviewCount:95, priceRange:"$$", category:"Home Services", categories:["Cleaning","Organizing","Deep Clean"], location:"Richmond District", address:"450 Clement St, San Francisco, CA 94118", phone:"(415) 555-4500", website:"https://cleansweepsf.com", description:"Eco-friendly house cleaning using all-natural products. Move-in/out cleans, regular maintenance, and deep cleaning services.", hours:[{day:"Mon",time:"7:00 AM – 6:00 PM"},{day:"Tue",time:"7:00 AM – 6:00 PM"},{day:"Wed",time:"7:00 AM – 6:00 PM"},{day:"Thu",time:"7:00 AM – 6:00 PM"},{day:"Fri",time:"7:00 AM – 6:00 PM"},{day:"Sat",time:"8:00 AM – 4:00 PM"},{day:"Sun",time:"Closed"}], images:["https://images.unsplash.com/photo-1558317374-067fb5f30001?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"2.8 mi" },
+  { id:"15", name:"Taqueria El Sol", image:"https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&h=400&fit=crop", rating:4.8, reviewCount:523, priceRange:"$", category:"Restaurants", categories:["Mexican","Tacos","Burritos"], location:"Mission District", address:"2889 Mission St, San Francisco, CA 94110", phone:"(415) 555-2889", website:"https://taqueriaelsol.com", description:"The Mission's best-kept secret for authentic street tacos. Al pastor on a real trompo, handmade tortillas, and legendary salsa verde.", hours:[{day:"Mon",time:"10:00 AM – 11:00 PM"},{day:"Tue",time:"10:00 AM – 11:00 PM"},{day:"Wed",time:"10:00 AM – 11:00 PM"},{day:"Thu",time:"10:00 AM – 12:00 AM"},{day:"Fri",time:"10:00 AM – 2:00 AM"},{day:"Sat",time:"10:00 AM – 2:00 AM"},{day:"Sun",time:"10:00 AM – 10:00 PM"}], images:["https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"1.4 mi" },
+  { id:"16", name:"Page Turner Books", image:"https://images.unsplash.com/photo-1526243741027-444d633d7365?w=600&h=400&fit=crop", rating:4.7, reviewCount:142, priceRange:"$$", category:"Shopping", categories:["Books","Cafe","Events"], location:"Cole Valley", address:"900 Cole St, San Francisco, CA 94117", phone:"(415) 555-9000", website:"https://pageturnerbooks.com", description:"Independent bookstore with a curated selection, in-store coffee bar, and weekly author readings. A literary haven.", hours:[{day:"Mon",time:"9:00 AM – 9:00 PM"},{day:"Tue",time:"9:00 AM – 9:00 PM"},{day:"Wed",time:"9:00 AM – 9:00 PM"},{day:"Thu",time:"9:00 AM – 10:00 PM"},{day:"Fri",time:"9:00 AM – 10:00 PM"},{day:"Sat",time:"10:00 AM – 10:00 PM"},{day:"Sun",time:"10:00 AM – 8:00 PM"}], images:["https://images.unsplash.com/photo-1526243741027-444d633d7365?w=900&h=600&fit=crop","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=900&h=600&fit=crop"], isSaved:false, isOpen:true, distance:"2.0 mi" },
+];
+
+const reviews = [
+  { id:"r1", businessId:"1", userName:"Sarah M.", userAvatar:"https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face", rating:5, text:"Absolutely stunning experience! The truffle pasta was out of this world. Chef Marco came out to greet us personally. Will definitely be back!", date:"Feb 15, 2026", helpful:24, images:["https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop"] },
+  { id:"r2", businessId:"1", userName:"James K.", userAvatar:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face", rating:4, text:"Great food and wine selection. The service was a bit slow during peak hours but the quality more than makes up for it. The tiramisu is a must-try.", date:"Feb 10, 2026", helpful:12, images:[] },
+  { id:"r3", businessId:"1", userName:"Emily R.", userAvatar:"https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face", rating:5, text:"Best Italian food I've had outside of Italy. The handmade pasta is incredible and the wine pairing suggestions from the sommelier were spot on.", date:"Jan 28, 2026", helpful:18, images:["https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop"] },
+  { id:"r4", businessId:"2", userName:"Sarah M.", userAvatar:"https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face", rating:5, text:"My go-to coffee spot! The pour-over is consistently amazing. Love the cozy atmosphere and friendly baristas.", date:"Feb 20, 2026", helpful:8, images:[] },
+  { id:"r5", businessId:"7", userName:"James K.", userAvatar:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face", rating:5, text:"The omakase here is a transcendent experience. Every piece of sushi is perfection. Chef Tanaka is a true master. Worth every penny.", date:"Feb 18, 2026", helpful:32, images:["https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=300&fit=crop"] },
+  { id:"r6", businessId:"5", userName:"Emily R.", userAvatar:"https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face", rating:5, text:"Glow is my sanctuary. The hair treatment left my hair looking incredible for weeks. The staff is warm and professional.", date:"Feb 12, 2026", helpful:15, images:[] },
+  { id:"r7", businessId:"15", userName:"Carlos V.", userAvatar:"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face", rating:5, text:"The al pastor tacos here are better than anything I've had in Mexico City. The salsa verde is liquid gold. I come here twice a week.", date:"Feb 25, 2026", helpful:41, images:[] },
+  { id:"r8", businessId:"13", userName:"Wei L.", userAvatar:"https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face", rating:5, text:"The hot stone massage was absolutely heavenly. The staff is incredibly attentive and the ambiance is perfect. Already booked my next appointment.", date:"Feb 22, 2026", helpful:27, images:[] },
+];
+
+const trendingCities = [
+  { name:"San Francisco", image:"https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=400&h=300&fit=crop", count:"4,200" },
+  { name:"New York", image:"https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=300&fit=crop", count:"8,100" },
+  { name:"Los Angeles", image:"https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=400&h=300&fit=crop", count:"5,600" },
+  { name:"Chicago", image:"https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=400&h=300&fit=crop", count:"3,200" },
+  { name:"Austin", image:"https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=400&h=300&fit=crop", count:"2,100" },
+  { name:"Seattle", image:"https://images.unsplash.com/photo-1502175353174-a7a70e73b4c3?w=400&h=300&fit=crop", count:"2,800" },
+];
+
+const categories = [
+  { id:"restaurants", name:"Restaurants", emoji:"🍽", color:"#ef4444", bg:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&h=300&fit=crop", count:"1,250" },
+  { id:"cafes", name:"Cafes", emoji:"☕", color:"#f59e0b", bg:"https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=300&h=300&fit=crop", count:"830" },
+  { id:"nightlife", name:"Nightlife", emoji:"🍸", color:"#a855f7", bg:"https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=300&h=300&fit=crop", count:"420" },
+  { id:"shopping", name:"Shopping", emoji:"🛍", color:"#3b82f6", bg:"https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=300&fit=crop", count:"670" },
+  { id:"beauty", name:"Beauty", emoji:"✨", color:"#ec4899", bg:"https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=300&fit=crop", count:"540" },
+  { id:"home-services", name:"Services", emoji:"🔧", color:"#10b981", bg:"https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=300&h=300&fit=crop", count:"380" },
+];
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let currentPage = 'home';
+let searchQuery = '';
+let filterRating = 0;
+let filterPrices = [];
+let filterCats = [];
+let filterOpenOnly = false;
+let currentBizId = null;
+let reviewRating = 0;
+let reviewHelpful = {};
+let loggedIn = false;
+let currentUser = { name:"Sarah M.", avatar:"https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face", location:"San Francisco, CA", joinDate:"January 2024", bio:"Food lover, coffee addict, and local explorer. Always on the hunt for the next great restaurant or hidden gem.", reviewCount:4, photoCount:8, savedCount:4 };
+
+// ════════════════════════════════════════
+//  RENDER HELPERS
+// ════════════════════════════════════════
+function starsHTML(rating, size=14) {
+  let s = '';
+  for(let i=1;i<=5;i++) {
+    s += `<span class="star${i>Math.round(rating)?' empty':''}" style="font-size:${size}px">★</span>`;
+  }
+  return `<span class="stars">${s}</span>`;
+}
+
+function bizCardHTML(biz, grid='') {
+  const saved = biz.isSaved;
+  return `
+    <div class="biz-card" onclick="openBusiness('${biz.id}')">
+      <div class="biz-img-wrap">
+        <img src="${biz.image}" alt="${biz.name}" loading="lazy" />
+        <button class="biz-save-btn ${saved?'saved':''}" onclick="event.stopPropagation();toggleSave('${biz.id}',this)" title="${saved?'Remove from saved':'Save'}">
+          ${saved ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`}
+        </button>
+        ${biz.isOpen ? `<span class="badge badge-green biz-open-badge">Open Now</span>` : `<span class="badge badge-closed biz-open-badge">Closed</span>`}
+      </div>
+      <div class="biz-body">
+        <div class="biz-top">
+          <div class="biz-name">${biz.name}</div>
+          <div class="biz-price">${biz.priceRange}</div>
+        </div>
+        <div class="biz-rating">
+          ${starsHTML(biz.rating)}
+          <span class="biz-rating-num">${biz.rating}</span>
+          <span class="biz-rating-count">(${biz.reviewCount})</span>
+        </div>
+        <div class="biz-meta">
+          <span class="biz-cat">${biz.category}</span>
+          <span>·</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>${biz.location}</span>
+          <span>·</span>
+          <span>${biz.distance}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════
+//  NAV & PAGES
+// ════════════════════════════════════════
+function showPage(name, scroll=true) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  currentPage = name;
+
+  const navbar = document.getElementById('navbar');
+  const navSearchWrap = document.getElementById('nav-search-wrap');
+
+  if(name === 'home') {
+    navbar.classList.remove('solid');
+    navSearchWrap.style.display = 'none';
+  } else {
+    navbar.classList.add('solid');
+    navSearchWrap.style.display = 'flex';
+  }
+
+  if(scroll) window.scrollTo(0,0);
+
+  if(name === 'search') renderSearch();
+  if(name === 'saved') renderSaved();
+  if(name === 'profile') renderProfile();
+}
+
+window.addEventListener('scroll', () => {
+  if(currentPage === 'home') {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  }
+});
+
+function toggleMobileMenu() {
+  const m = document.getElementById('mobile-menu');
+  m.classList.toggle('hidden');
+}
+
+// ════════════════════════════════════════
+//  SEARCH
+// ════════════════════════════════════════
+function doHeroSearch() {
+  searchQuery = document.getElementById('hero-q').value.trim();
+  showPage('search');
+}
+function doQuickSearch(cat) {
+  searchQuery = cat;
+  showPage('search');
+}
+function doNavSearch() {
+  searchQuery = document.getElementById('nav-search-input').value.trim();
+  showPage('search');
+}
+function runSearch() {
+  searchQuery = document.getElementById('search-input').value.trim();
+  applyFilters();
+}
+
+function getFilteredBusinesses() {
+  return businesses.filter(b => {
+    if(searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if(!b.name.toLowerCase().includes(q) && !b.category.toLowerCase().includes(q) &&
+         !b.categories.some(c=>c.toLowerCase().includes(q)) && !b.location.toLowerCase().includes(q)) return false;
+    }
+    if(filterRating && b.rating < filterRating) return false;
+    if(filterPrices.length && !filterPrices.includes(b.priceRange)) return false;
+    if(filterCats.length && !filterCats.includes(b.category)) return false;
+    if(filterOpenOnly && !b.isOpen) return false;
+    return true;
+  });
+}
+
+function renderSearch() {
+  if(document.getElementById('search-input')) {
+    document.getElementById('search-input').value = searchQuery;
+    document.getElementById('nav-search-input').value = searchQuery;
+  }
+
+  // Build category checkboxes once
+  const ccont = document.getElementById('cat-checkboxes');
+  if(ccont && !ccont.innerHTML) {
+    const cats = [...new Set(businesses.map(b=>b.category))];
+    ccont.innerHTML = cats.map(c=>`<label class="check-label"><input type="checkbox" value="${c}" onchange="onCatCheck(this)" /> ${c}</label>`).join('');
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  filterOpenOnly = document.getElementById('filter-open')?.checked || false;
+  const res = getFilteredBusinesses();
+  const grid = document.getElementById('search-results-grid');
+  const noRes = document.getElementById('no-results');
+  const heading = document.getElementById('search-heading');
+  const countEl = document.getElementById('search-count');
+  const mapCount = document.getElementById('map-count');
+
+  if(heading) heading.textContent = searchQuery ? `Results for "${searchQuery}"` : 'All Businesses';
+  if(countEl) countEl.textContent = `${res.length} business${res.length!==1?'es':''} found`;
+  if(mapCount) mapCount.textContent = res.length;
+
+  if(grid) {
+    if(res.length === 0) {
+      grid.innerHTML = '';
+      noRes.classList.remove('hidden');
+    } else {
+      noRes.classList.add('hidden');
+      grid.innerHTML = res.map(b=>bizCardHTML(b)).join('');
+    }
+  }
+
+  // Map pins
+  const pins = document.getElementById('map-pins');
+  if(pins) {
+    pins.innerHTML = res.slice(0,12).map(b=>`<div onclick="openBusiness('${b.id}')" style="padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">📍 ${b.name}</div>`).join('');
+  }
+}
+
+function setRating(r) {
+  filterRating = r;
+  document.querySelectorAll('.rating-btn').forEach(b=>b.classList.remove('active'));
+  event.target.closest('.rating-btn').classList.add('active');
+  applyFilters();
+}
+function togglePrice(btn, p) {
+  if(filterPrices.includes(p)) { filterPrices = filterPrices.filter(x=>x!==p); btn.classList.remove('active'); }
+  else { filterPrices.push(p); btn.classList.add('active'); }
+  applyFilters();
+}
+function onCatCheck(el) {
+  if(el.checked) filterCats.push(el.value);
+  else filterCats = filterCats.filter(c=>c!==el.value);
+  applyFilters();
+}
+function resetFilters() {
+  filterRating = 0; filterPrices = []; filterCats = []; filterOpenOnly = false;
+  document.querySelectorAll('.rating-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.price-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#cat-checkboxes input').forEach(el=>el.checked=false);
+  const fo = document.getElementById('filter-open'); if(fo) fo.checked = false;
+  applyFilters();
+  showToast('Filters reset','info');
+}
+function toggleFilterSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ════════════════════════════════════════
+//  BUSINESS DETAIL
+// ════════════════════════════════════════
+function openBusiness(id) {
+  const biz = businesses.find(b=>b.id===id);
+  if(!biz) return;
+  currentBizId = id;
+  const bizReviews = reviews.filter(r=>r.businessId===id);
+  const todayIdx = new Date().getDay(); // 0=Sun,1=Mon...
+  const dayMap = {0:6,1:0,2:1,3:2,4:3,5:4,6:5};
+  const todayDay = dayMap[todayIdx];
+
+  const galleryImgs = biz.images;
+  const gallery = galleryImgs.length > 1 ?
+    `<div class="photo-gallery">
+      <div class="photo-gallery-main"><img src="${galleryImgs[0]}" alt="${biz.name}" onclick="openLightbox('${galleryImgs[0]}')" /></div>
+      <div class="photo-gallery-side">
+        <img src="${galleryImgs[1]||galleryImgs[0]}" alt="${biz.name}" onclick="openLightbox('${galleryImgs[1]||galleryImgs[0]}')" />
+        ${galleryImgs[2] ? `<img src="${galleryImgs[2]}" alt="${biz.name}" onclick="openLightbox('${galleryImgs[2]}')" />` : `<div style="background:var(--surface2);height:100%;border-radius:0 0 16px 0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">+ ${galleryImgs.length} photos</div>`}
+      </div>
+    </div>` :
+    `<div style="height:320px;border-radius:16px;overflow:hidden;"><img src="${galleryImgs[0]}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="openLightbox('${galleryImgs[0]}')" /></div>`;
+
+  const hoursHTML = biz.hours.map((h,i) => `<div class="hours-row ${i===todayDay?'today':''}"><span class="day">${h.day}</span><span class="time">${h.time}</span></div>`).join('');
+  const reviewsHTML = bizReviews.length > 0
+    ? bizReviews.map(r => reviewCardHTML(r)).join('')
+    : `<div style="text-align:center;padding:40px 20px;color:var(--muted)">No reviews yet. Be the first to review!</div>`;
+
+  document.getElementById('business-detail-content').innerHTML = `
+    <div style="padding-bottom:60px">
+      ${gallery}
+      <div class="detail-layout">
+        <div class="detail-main">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:12px">
+            <h1 style="font-size:clamp(24px,4vw,36px);font-weight:700;line-height:1.2">${biz.name}</h1>
+            <span style="font-size:18px;font-weight:600;color:var(--muted);flex-shrink:0">${biz.priceRange}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+            ${starsHTML(biz.rating, 18)}
+            <span style="font-size:16px;font-weight:700">${biz.rating}</span>
+            <span style="color:var(--muted);font-size:14px">(${biz.reviewCount} reviews)</span>
+            ${biz.categories.map(c=>`<span class="badge badge-cat">${c}</span>`).join('')}
+          </div>
+          <div style="margin-bottom:20px">${biz.isOpen ? `<span class="badge badge-green">● Open Now</span>` : `<span class="badge badge-closed">Closed</span>`}</div>
+
+          <div class="detail-actions">
+            <button class="btn btn-primary" onclick="openWriteReview('${biz.id}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Write a Review
+            </button>
+            <button class="btn btn-outline" id="save-btn-detail" onclick="toggleSaveDetail('${biz.id}')">
+              ${biz.isSaved
+                ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved`
+                : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Save`}
+            </button>
+            <button class="btn btn-outline" onclick="shareModal('${biz.id}','${biz.name}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Share
+            </button>
+            <a class="btn btn-ghost" href="tel:${biz.phone}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.6 5 2 2 0 0 1 3.58 2.8h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.4a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              Call
+            </a>
+          </div>
+
+          <div class="detail-about">
+            <h2>About</h2>
+            <p>${biz.description}</p>
+          </div>
+
+          <div class="detail-reviews">
+            <h2 style="margin-bottom:20px">Reviews <span style="font-size:14px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400">(${bizReviews.length})</span></h2>
+            <div id="reviews-list">${reviewsHTML}</div>
+          </div>
+        </div>
+
+        <div class="detail-sidebar">
+          <div class="detail-sidebar-card">
+            <div class="detail-info-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>${biz.address}</span>
+            </div>
+            <div class="detail-info-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.6 19.79 19.79 0 0 1 1.6 5 2 2 0 0 1 3.58 2.8h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.4a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <a href="tel:${biz.phone}">${biz.phone}</a>
+            </div>
+            <div class="detail-info-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <a href="${biz.website}" target="_blank" rel="noopener">Visit Website ↗</a>
+            </div>
+          </div>
+
+          <div class="detail-sidebar-card">
+            <h4 style="font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Hours
+            </h4>
+            ${hoursHTML}
+          </div>
+
+          <div class="detail-sidebar-card" style="background:var(--surface2);text-align:center;padding:20px">
+            <div style="font-size:24px;margin-bottom:8px">🗺</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">${biz.location}</div>
+            <div style="font-size:12px;color:var(--muted)">${biz.address}</div>
+            <button class="btn btn-outline" style="margin-top:14px;width:100%;justify-content:center;font-size:13px" onclick="showToast('Opening maps for ${biz.name}...','info');window.open('https://maps.google.com/?q=${encodeURIComponent(biz.address)}','_blank')">
+              Open in Maps
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  showPage('business');
+}
+
+function reviewCardHTML(r) {
+  const helpCount = reviewHelpful[r.id] || r.helpful;
+  return `
+    <div class="review-card">
+      <div class="review-header">
+        <img class="review-avatar" src="${r.userAvatar}" alt="${r.userName}" />
+        <div>
+          <div class="review-user">${r.userName}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            ${starsHTML(r.rating, 12)}
+            <span class="review-date" style="font-size:12px;color:var(--muted)">${r.date}</span>
+          </div>
+        </div>
+      </div>
+      <p class="review-text">${r.text}</p>
+      ${r.images && r.images.length ? `<div style="display:flex;gap:8px;margin-bottom:12px">${r.images.map(img=>`<img src="${img}" style="width:80px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="openLightbox('${img}')" />`).join('')}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="review-helpful">Helpful (${helpCount})</span>
+        <button class="helpful-btn" onclick="markHelpful('${r.id}',${helpCount})">👍 Helpful</button>
+      </div>
+    </div>`;
+}
+
+function markHelpful(reviewId, current) {
+  reviewHelpful[reviewId] = current + 1;
+  // Re-render reviews for current business
+  const bizReviews = reviews.filter(r=>r.businessId===currentBizId);
+  const list = document.getElementById('reviews-list');
+  if(list) list.innerHTML = bizReviews.map(r=>reviewCardHTML(r)).join('');
+  showToast('Marked as helpful!','success');
+}
+
+function toggleSave(bizId, btn) {
+  const biz = businesses.find(b=>b.id===bizId);
+  if(!biz) return;
+  biz.isSaved = !biz.isSaved;
+  if(biz.isSaved) {
+    btn.classList.add('saved');
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    showToast(`"${biz.name}" saved!`,'success');
+  } else {
+    btn.classList.remove('saved');
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`;
+    showToast(`Removed from saved`,'info');
+  }
+}
+
+function toggleSaveDetail(bizId) {
+  const biz = businesses.find(b=>b.id===bizId);
+  if(!biz) return;
+  biz.isSaved = !biz.isSaved;
+  const btn = document.getElementById('save-btn-detail');
+  if(!btn) return;
+  if(biz.isSaved) {
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved`;
+    showToast(`"${biz.name}" saved!`,'success');
+  } else {
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Save`;
+    showToast(`Removed from saved`,'info');
+  }
+}
+
+function shareModal(id, name) {
+  document.getElementById('share-url').textContent = `https://locale.app/business/${id}`;
+  document.getElementById('modal-share').querySelector('h3').textContent = `Share "${name}"`;
+  openModal('share');
+}
+
+function copyLink() {
+  const url = document.getElementById('share-url').textContent;
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copied!','success')).catch(()=>showToast('Copied!','success'));
+  closeModal('share');
+}
+
+// ════════════════════════════════════════
+//  WRITE REVIEW
+// ════════════════════════════════════════
+function openWriteReview(bizId) {
+  const biz = businesses.find(b=>b.id===bizId);
+  if(!biz) return;
+  currentBizId = bizId;
+  reviewRating = 0;
+  document.getElementById('review-form-content').innerHTML = `
+    <h1 style="font-size:28px;font-weight:700;margin-bottom:6px">Write a Review</h1>
+    <p style="color:var(--muted);margin-bottom:28px">for <span style="color:var(--accent);font-weight:600">${biz.name}</span></p>
+    <div class="review-form-card">
+      <div style="text-align:center;margin-bottom:28px">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:8px">How would you rate your experience?</p>
+        <div class="star-picker" id="star-picker">
+          ${[1,2,3,4,5].map(i=>`<button class="star-pick-btn" data-star="${i}" onmouseover="previewStars(${i})" onmouseout="resetStarPreview()" onclick="setReviewRating(${i})">★</button>`).join('')}
+        </div>
+        <div class="rating-label" id="rating-label"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your Name</label>
+        <input class="form-input" type="text" id="rv-name" placeholder="Jane Smith" value="${loggedIn ? currentUser.name : ''}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your Review</label>
+        <textarea class="form-textarea" id="rv-text" placeholder="Share your experience. What was great? What could be improved? Any tips for others?"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Add Photos <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <div class="photo-upload" onclick="showToast('Photo upload coming soon!','info')">
+          <div class="photo-upload-icon">📷</div>
+          <p>Click to upload photos</p>
+          <p style="font-size:11px;margin-top:4px">JPG, PNG up to 10MB</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:15px" onclick="submitReview('${bizId}')">
+        Submit Review
+      </button>
+    </div>`;
+  showPage('review');
+}
+
+function previewStars(n) {
+  const btns = document.querySelectorAll('.star-pick-btn');
+  btns.forEach((b,i)=>b.style.color=i<n?'var(--accent)':'var(--muted)');
+  const labels = ['','Not good','Could be better','Okay','Good','Great!'];
+  const lbl = document.getElementById('rating-label');
+  if(lbl) lbl.textContent = labels[n];
+}
+function resetStarPreview() {
+  previewStars(reviewRating);
+}
+function setReviewRating(n) {
+  reviewRating = n;
+  document.querySelectorAll('.star-pick-btn').forEach((b,i)=>{
+    b.classList.toggle('active', i<n);
+    b.style.color=i<n?'var(--accent)':'var(--muted)';
+  });
+}
+
+function submitReview(bizId) {
+  if(reviewRating === 0) { showToast('Please select a star rating','error'); return; }
+  const name = document.getElementById('rv-name').value.trim();
+  const text = document.getElementById('rv-text').value.trim();
+  if(!name) { showToast('Please enter your name','error'); return; }
+  if(!text || text.length < 10) { showToast('Please write at least a brief review','error'); return; }
+
+  const biz = businesses.find(b=>b.id===bizId);
+  const newReview = {
+    id: 'r'+Date.now(), businessId: bizId,
+    userName: name, userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop&crop=face",
+    rating: reviewRating, text: text, date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    helpful: 0, images: []
+  };
+  reviews.push(newReview);
+  if(biz) { biz.reviewCount++; }
+
+  showToast('Review submitted! Thank you 🎉','success');
+  openBusiness(bizId);
+}
+
+// ════════════════════════════════════════
+//  PROFILE
+// ════════════════════════════════════════
+function renderProfile() {
+  const u = currentUser;
+  const userReviews = reviews.filter(r=>r.userName===u.name);
+  const savedBiz = businesses.filter(b=>b.isSaved);
+  const photos = userReviews.flatMap(r=>r.images||[]);
+
+  document.getElementById('profile-content').innerHTML = `
+    <div class="profile-header">
+      <div class="profile-top">
+        <div class="profile-avatar-wrap">
+          <img class="profile-avatar" src="${u.avatar}" alt="${u.name}" />
+        </div>
+        <div class="profile-info">
+          <div class="profile-name">${u.name}</div>
+          <div class="profile-meta">
+            <span>📍 ${u.location}</span>
+            <span>📅 Joined ${u.joinDate}</span>
+          </div>
+          <p class="profile-bio">${u.bio}</p>
+        </div>
+        <div class="profile-stats">
+          <div><div class="profile-stat-num">${userReviews.length}</div><div class="profile-stat-label">Reviews</div></div>
+          <div><div class="profile-stat-num">${photos.length}</div><div class="profile-stat-label">Photos</div></div>
+          <div><div class="profile-stat-num">${savedBiz.length}</div><div class="profile-stat-label">Saved</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('reviews',this)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Reviews
+      </button>
+      <button class="tab-btn" onclick="switchTab('photos',this)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Photos
+      </button>
+      <button class="tab-btn" onclick="switchTab('saved-tab',this)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        Saved
+      </button>
+    </div>
+
+    <div id="tab-reviews" class="tab-pane active">
+      ${userReviews.length ? userReviews.map(r=>reviewCardHTML(r)).join('') : `<div style="text-align:center;padding:48px 20px;color:var(--muted)">No reviews yet. Share your experiences!</div>`}
+    </div>
+    <div id="tab-photos" class="tab-pane">
+      ${photos.length ? `<div class="photos-grid">${photos.map(p=>`<img src="${p}" alt="Photo" onclick="openLightbox('${p}')" />`).join('')}</div>` : `<div style="text-align:center;padding:48px 20px;color:var(--muted)">No photos uploaded yet.</div>`}
+    </div>
+    <div id="tab-saved-tab" class="tab-pane">
+      ${savedBiz.length ? `<div class="profile-biz-grid">${savedBiz.map(b=>bizCardHTML(b)).join('')}</div>` : `<div style="text-align:center;padding:48px 20px;color:var(--muted)">No saved businesses yet.</div>`}
+    </div>`;
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  const pane = document.getElementById('tab-'+id);
+  if(pane) pane.classList.add('active');
+}
+
+// ════════════════════════════════════════
+//  SAVED
+// ════════════════════════════════════════
+function renderSaved() {
+  const saved = businesses.filter(b=>b.isSaved);
+  const grid = document.getElementById('saved-grid');
+  const empty = document.getElementById('saved-empty');
+  const label = document.getElementById('saved-count-label');
+  if(label) label.textContent = `${saved.length} saved`;
+  if(grid) grid.innerHTML = saved.map(b=>bizCardHTML(b)).join('');
+  if(empty) empty.classList.toggle('hidden', saved.length > 0);
+}
+
+// ════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════
+function openModal(name) {
+  document.getElementById('modal-'+name).classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(name) {
+  document.getElementById('modal-'+name).classList.add('hidden');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') { document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m=>m.classList.add('hidden')); document.body.style.overflow=''; } });
+
+function submitLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if(!email || !pass) { showToast('Please fill in all fields','error'); return; }
+  loggedIn = true;
+  closeModal('login');
+  showToast('Welcome back! Logged in successfully 🎉','success');
+}
+function submitSignup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pass = document.getElementById('signup-pass').value;
+  if(!name||!email||!pass) { showToast('Please fill in all fields','error'); return; }
+  if(pass.length < 8) { showToast('Password must be at least 8 characters','error'); return; }
+  loggedIn = true;
+  currentUser.name = name;
+  closeModal('signup');
+  showToast(`Welcome, ${name}! Account created 🎉`,'success');
+}
+
+// ════════════════════════════════════════
+//  LIGHTBOX
+// ════════════════════════════════════════
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+document.getElementById('lightbox').addEventListener('click', e => { if(e.target===e.currentTarget) closeLightbox(); });
+
+// ════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════
+function showToast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️' };
+  const tc = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  tc.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(20px)'; t.style.transition='all .3s'; setTimeout(()=>t.remove(), 300); }, 3000);
+}
+
+// ════════════════════════════════════════
+//  INIT HOME SECTIONS
+// ════════════════════════════════════════
+(function init() {
+  // Categories grid
+  const cg = document.getElementById('categories-grid');
+  if(cg) cg.innerHTML = categories.map(c=>`
+    <div class="cat-card" onclick="doQuickSearch('${c.name}')">
+      <div class="cat-card-bg" style="background-image:url('${c.bg}')"></div>
+      <div class="cat-card-overlay"></div>
+      <div class="cat-card-content">
+        <div class="cat-icon">${c.emoji}</div>
+        <div class="cat-name">${c.name}</div>
+        <div class="cat-count">${c.count}+</div>
+      </div>
+    </div>`).join('');
+
+  // Featured
+  const fg = document.getElementById('featured-grid');
+  if(fg) fg.innerHTML = businesses.slice(0,8).map(b=>bizCardHTML(b)).join('');
+
+  // Cities
+  const citg = document.getElementById('cities-grid');
+  if(citg) citg.innerHTML = trendingCities.map(c=>`
+    <div class="city-card" onclick="showToast('Exploring ${c.name}...','info');doQuickSearch('')">
+      <img src="${c.image}" alt="${c.name}" loading="lazy" />
+      <div class="city-overlay"></div>
+      <div class="city-info">
+        <div class="city-name">${c.name}</div>
+        <div class="city-count">${c.count} places</div>
+      </div>
+    </div>`).join('');
+})();
+</script>
+</body>
+</html>
